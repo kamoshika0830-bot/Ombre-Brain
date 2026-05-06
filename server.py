@@ -543,7 +543,7 @@ async def breath(
                 logger.warning(f"importance_min dehydrate failed for {b['id']}, using fallback: {e}")
                 raw = strip_wikilinks(b["content"])
                 fallback = (raw[:250] + "…") if len(raw) > 250 else raw
-                t = count_tokens(fallback)
+                t = len(fallback) // 4
                 if token_used + t > max_tokens:
                     break
                 imp = int(b["metadata"].get("importance", 0))
