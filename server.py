@@ -1951,6 +1951,6 @@ if __name__ == "__main__":
             expose_headers=["*"],
         )
         logger.info("CORS middleware enabled for remote transport / 已启用 CORS 中间件")
-        uvicorn.run(_app, host="0.0.0.0", port=OMBRE_PORT)
+        uvicorn.run(_app, host="0.0.0.0", port=8000)
     else:
         mcp.run(transport=transport)
