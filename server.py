@@ -1,4 +1,8 @@
 # ============================================================
+
+def count_tokens(text: str) -> int:
+    """估算文本的 token 数（1 token ≈ 4 字符）"""
+    return len(text) // 4
 # Module: MCP Server Entry Point (server.py)
 # 模块：MCP 服务器主入口
 #
