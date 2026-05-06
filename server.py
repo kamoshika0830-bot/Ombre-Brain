@@ -540,7 +540,15 @@ async def breath(
                 results.append(f"[importance:{imp}] [bucket_id:{b['id']}] {summary}")
                 token_used += t
             except Exception as e:
-                logger.warning(f"importance_min dehydrate failed: {e}")
+                logger.warning(f"importance_min dehydrate failed for {b['id']}, using fallback: {e}")
+                raw = strip_wikilinks(b["content"])
+                fallback = (raw[:250] + "…") if len(raw) > 250 else raw
+                t = count_tokens(fallback)
+                if token_used + t > max_tokens:
+                    break
+                imp = int(b["metadata"].get("importance", 0))
+                results.append(f"[importance:{imp}] [bucket_id:{b['id']}] {fallback}")
+                token_used += t
         return "\n---\n".join(results) if results else "没有可以展示的记忆。"
 
     # --- No args or empty query: surfacing mode (weight pool active push) ---
