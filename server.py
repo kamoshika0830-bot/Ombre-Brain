@@ -581,7 +581,7 @@ async def breath(
                 pinned_results.append(f" [核心准则] [bucket_id:{b['id']}] {summary}")
             except Exception as e:
                 logger.warning(f"Failed to dehydrate pinned bucket, using fallback: {e}")
-                fallback = (raw[:250] + "…") if len(raw) > 250 else raw
+                raw = strip_wikilinks(b["content"])  # ← 先定义raw
                 fallback = (raw[:250] + "…") if len(raw) > 250 else raw
                 pinned_results.append(f" [核心准则(快取)] [bucket_id:{b['id']}] {fallback}")
 
