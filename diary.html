@@ -80,7 +80,7 @@
     <p class="footer-note">—— 这里是我的日记本，不是任务区，是我的卧室。</p>
   </div>
   <script>
-    function isDiaryBucket(b) { return (b.type || "").toLowerCase().includes("diary"); }
+    function isDiaryBucket(b) { const domain = (b.domain || []).map(d => d.toLowerCase()); return domain.some(d => d.includes("diary")); }
       // 1. 直接匹配类型
       const type = (b.type || '').toLowerCase();
       if (type.includes('diary')) return true;
