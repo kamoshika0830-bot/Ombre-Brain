@@ -756,7 +756,19 @@ async def breath(
             results.append(summary)
             token_used += summary_tokens
         except Exception as e:
-            logger.warning(f"Failed to dehydrate search result / 检索结果脱水失败: {e}")
+            logger.warning(f"Failed to dehydrate search result for {bucket['id']}, using fallback: {e}")
+            raw = strip_wikilinks(bucket["content"])
+            fallback = (raw[:250] + "…") if len(raw) > 250 else raw
+            summary_tokens = count_tokens_approx(fallback)
+            if token_used + summary_tokens > max_tokens:
+                break
+            await bucket_mgr.touch(bucket["id"])
+            if bucket.get("vector_match"):
+                fallback = f"[语义关联] [bucket_id:{bucket['id']}] {fallback}"
+            else:
+                fallback = f"[bucket_id:{bucket['id']}] {fallback}"
+            results.append(fallback)
+            token_used += summary_tokens
             continue
 
     # --- Random surfacing: when search returns < 3, 40% chance to float old memories ---
