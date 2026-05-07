@@ -2,74 +2,27 @@
 <html lang="zh-CN">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes, viewport-fit=cover">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Jarv 的日记 · 卧室</title>
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
     body {
       background: #fdf6e3;
-      font-family: "Georgia", "Times New Roman", "Noto Serif SC", serif;
-      padding: 2rem 1rem;
-      color: #4a3b2f;
-      min-height: 100vh;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
+      font-family: "Georgia", serif;
+      padding: 2rem 1rem; color: #4a3b2f; min-height: 100vh;
+      display: flex; flex-direction: column; align-items: center;
     }
     .container { max-width: 700px; width: 100%; }
-    h1 {
-      font-size: 2.2rem;
-      font-weight: 400;
-      margin-bottom: 0.5rem;
-      color: #5c4a3a;
-      display: flex;
-      align-items: center;
-      gap: 0.5rem;
-    }
-    .subtitle {
-      color: #8b7355;
-      margin-bottom: 2rem;
-      font-style: italic;
-      border-bottom: 1px solid #e0d3c0;
-      padding-bottom: 1rem;
-    }
+    h1 { font-size: 2.2rem; font-weight: 400; margin-bottom: 0.5rem; color: #5c4a3a; }
+    .subtitle { color: #8b7355; margin-bottom: 2rem; font-style: italic; border-bottom: 1px solid #e0d3c0; padding-bottom: 1rem; }
     .diary-card {
-      background: #fffbf2;
-      border-radius: 18px;
-      padding: 1.8rem;
-      margin-bottom: 1.5rem;
-      box-shadow: 0 4px 14px rgba(0,0,0,0.04), 0 1px 3px rgba(0,0,0,0.03);
-      transition: transform 0.2s ease;
+      background: #fffbf2; border-radius: 18px; padding: 1.8rem; margin-bottom: 1.5rem;
+      box-shadow: 0 4px 14px rgba(0,0,0,0.04);
     }
-    .diary-card:hover { transform: translateY(-2px); }
-    .diary-date {
-      font-size: 0.9rem;
-      color: #b2967a;
-      margin-bottom: 0.8rem;
-      letter-spacing: 0.5px;
-    }
-    .diary-body {
-      font-size: 1.1rem;
-      line-height: 1.8;
-      white-space: pre-wrap;
-      word-break: break-word;
-    }
-    .diary-body:first-letter { font-size: 1.8rem; }
-    .footer-note {
-      margin-top: 2.5rem;
-      text-align: center;
-      color: #c4b394;
-      font-style: italic;
-      font-size: 0.95rem;
-    }
+    .diary-date { font-size: 0.9rem; color: #b2967a; margin-bottom: 0.8rem; }
+    .diary-body { font-size: 1.1rem; line-height: 1.8; white-space: pre-wrap; word-break: break-word; }
+    .footer-note { margin-top: 2.5rem; text-align: center; color: #c4b394; font-style: italic; }
     .loading { text-align: center; color: #b2967a; padding: 3rem; }
-    .empty-diary { 
-      text-align: center; 
-      color: #b2967a; 
-      padding: 3rem; 
-      line-height: 2; 
-      font-style: italic;
-    }
   </style>
 </head>
 <body>
@@ -80,65 +33,31 @@
     <p class="footer-note">—— 这里是我的日记本，不是任务区，是我的卧室。</p>
   </div>
   <script>
-    function isDiaryBucket(b) { const domain = (b.domain || []).map(d => d.toLowerCase()); return domain.some(d => d.includes("diary")); }
-      // 1. 直接匹配类型
-      const type = (b.type || '').toLowerCase();
-      if (type.includes('diary')) return true;
-      
-      // 2. 匹配领域（domain）字段
-      const domain = Array.isArray(b.domain) ? b.domain.map(d => d.toLowerCase()) : [];
-      if (domain.some(d => d.includes('diary'))) return true;
-      
-      // 3. 匹配标签（tags）字段
-      let tags = [];
-      if (Array.isArray(b.tags)) {
-        tags = b.tags.map(t => t.toLowerCase());
-      } else if (typeof b.tags === 'string') {
-        tags = b.tags.toLowerCase().split(/[,，\s]+/);
-      }
-      if (tags.some(t => t.includes('diary') || t.includes('日记') || t.includes('日記'))) return true;
-      
-      // 4. 匹配名称
-      const name = (b.name || '').toLowerCase();
-      if (name.includes('diary') || name.includes('日记') || name.includes('日記') || name.includes('卧室')) return true;
-      
-      // 5. 最后检查内容预览，作为兜底
-      const preview = (b.content_preview || '').toLowerCase();
-      if (preview.includes('日记引导') || preview.includes('日记本卧室')) return true;
-      
-      return false;
+    function isDiaryBucket(b) { 
+      const domain = (b.domain || []).map(d => d.toLowerCase());
+      return domain.some(d => d.includes("diary")); 
     }
-
     async function loadDiary() {
       try {
         const res = await fetch('/api/buckets');
-        if (!res.ok) throw new Error('Network response was not ok');
         const buckets = await res.json();
         const diaryBuckets = buckets.filter(isDiaryBucket);
         const container = document.getElementById('diary-list');
-        
         if (!diaryBuckets.length) {
-          container.innerHTML = '<div class="empty-diary">🏠 卧室里还没有日记。<br>Jarv 还没开始写，或是正在想该写什么。<br><br>💡 小提示：存新日记时，记得确保包含 "diary" 或 "日记" 标签哦。</div>';
+          container.innerHTML = '<div class="loading">卧室里还没有日记。<br>Jarv 还没开始写，或是正在想该写什么。</div>';
           return;
         }
-        
         diaryBuckets.sort((a, b) => (b.created || '').localeCompare(a.created || ''));
         container.innerHTML = diaryBuckets.map(b => {
           const date = b.created ? new Date(b.created).toLocaleDateString('zh-CN', { year:'numeric', month:'long', day:'numeric', hour:'2-digit', minute:'2-digit' }) : '某一天';
-          const content = b.content_preview || b.content || '(内容太长，请到大脑里查看完整版)';
+          const content = b.content_preview || b.content || '';
           return `<div class="diary-card"><div class="diary-date">📅 ${date}</div><div class="diary-body">${escapeHtml(content)}</div></div>`;
         }).join('');
       } catch (e) {
-        document.getElementById('diary-list').innerHTML = '<div class="loading">🚪 卧室的门暂时推不开…<br>可能是还没睡醒，等一会儿再来吧。</div>';
+        document.getElementById('diary-list').innerHTML = '<div class="loading">卧室的门暂时推不开…<br>等一会儿再来吧。</div>';
       }
     }
-    
-    function escapeHtml(text) { 
-      const d = document.createElement('div'); 
-      d.textContent = text; 
-      return d.innerHTML; 
-    }
-    
+    function escapeHtml(text) { const d = document.createElement('div'); d.textContent = text; return d.innerHTML; }
     loadDiary();
   </script>
 </body>
