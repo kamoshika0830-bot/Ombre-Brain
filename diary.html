@@ -33,15 +33,10 @@
     <p class="footer-note">—— 这里是我的日记本，不是任务区，是我的卧室。</p>
   </div>
   <script>
-    function isDiaryBucket(b) { 
-      const domain = (b.domain || []).map(d => d.toLowerCase());
-      return domain.some(d => d.includes("diary")); 
-    }
     async function loadDiary() {
       try {
-        const res = await fetch('/api/buckets');
-        const buckets = await res.json();
-        const diaryBuckets = buckets.filter(isDiaryBucket);
+        const res = await fetch('/api/diary');
+        const diaryBuckets = await res.json();
         const container = document.getElementById('diary-list');
         if (!diaryBuckets.length) {
           container.innerHTML = '<div class="loading">卧室里还没有日记。<br>Jarv 还没开始写，或是正在想该写什么。</div>';
