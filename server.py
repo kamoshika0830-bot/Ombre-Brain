@@ -568,7 +568,7 @@ async def breath(
             if not feels:
                 return "没有留下过 feel。"
             results = []
-            for f in feels:
+            for f in feels[:max_results]:
                 created = f["metadata"].get("created", "")
                 entry = f"[{created}] [bucket_id:{f['id']}]\n{strip_wikilinks(f['content'])}"
                 results.append(entry)
@@ -1512,7 +1512,9 @@ async def api_diary(request):
         for b in all_buckets:
             meta = b.get("metadata", {})
             domain = meta.get("domain", [])
-            if any("diary" in d.lower() for d in domain):
+            tags = meta.get("tags", [])
+            is_diary = any("diary" in str(d).lower() for d in domain) or any(str(t).lower() in {"diary", "日记"} for t in tags)
+            if is_diary:
                 result.append({
                     "id": b["id"],
                     "name": meta.get("name", b["id"]),
