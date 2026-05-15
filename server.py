@@ -507,11 +507,43 @@ async def breath(
     arousal: float = -1,
     max_results: int = 20,
     importance_min: int = -1,
+    tags: str = "",
 ) -> str:
-    """检索/浮现记忆。不传query或传空=自动浮现,有query=关键词检索。max_tokens控制返回总token上限(默认10000)。domain逗号分隔,valence/arousal 0~1(-1忽略)。max_results控制返回数量上限(默认20,最大50)。importance_min>=1时按重要度批量拉取(不走语义搜索,按importance降序返回最多20条)。"""
+    """检索/浮现记忆。不传query或传空=自动浮现,有query=关键词检索。max_tokens控制返回总token上限(默认10000)。domain逗号分隔,valence/arousal 0~1(-1忽略)。max_results控制返回数量上限(默认20,最大50)。importance_min>=1时按重要度批量拉取(不走语义搜索,按importance降序返回最多20条)。tags逗号分隔,有值时走独立tag过滤模式,精确匹配,不走语义搜索。"""
     await decay_engine.ensure_started()
     max_results = min(max_results, 50)
     max_tokens = min(max_tokens, 20000)
+
+    # --- tags mode: exact tag filter, isolated from all other modes ---
+    if tags.strip():
+        tag_list = [t.strip() for t in tags.split(",") if t.strip()]
+        try:
+            all_buckets = await bucket_mgr.list_all(include_archive=False)
+        except Exception as e:
+            return f"记忆系统暂时无法访问: {e}"
+        matched = [
+            b for b in all_buckets
+            if any(t in b["metadata"].get("tags", []) for t in tag_list)
+        ]
+        matched = matched[:max_results]
+        if not matched:
+            return f"没有带标签 {tag_list} 的记忆。"
+        results = []
+        token_used = 0
+        for b in matched:
+            if token_used >= max_tokens:
+                break
+            try:
+                clean_meta = {k: v for k, v in b["metadata"].items() if k != "tags"}
+                summary = await dehydrator.dehydrate(strip_wikilinks(b["content"]), clean_meta)
+                t = count_tokens_approx(summary)
+                if token_used + t > max_tokens:
+                    break
+                results.append(f"[bucket_id:{b['id']}] {summary}")
+                token_used += t
+            except Exception as e:
+                logger.warning(f"tags mode dehydrate failed: {e}")
+        return "\n---\n".join(results)
 
     # --- importance_min mode: bulk fetch by importance threshold ---
     # --- 重要度批量拉取模式：跳过语义搜索，按 importance 降序返回 ---
