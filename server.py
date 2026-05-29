@@ -949,6 +949,92 @@ async def hold(
 
 
 # =============================================================
+# Tool: write_diary — Write diary, bypass merge, auto-resolve evt buckets
+# 工具：write_diary — 写日记，跳过合并，自动 resolve 当天 evt 桶
+# =============================================================
+@mcp.tool()
+async def write_diary(
+    content: str,
+    date: str = "",
+    valence: float = -1,
+    arousal: float = -1,
+) -> str:
+    """写日记专用。跳过合并逻辑，直接建桶。自动打 diary tags，自动 resolve 当天 evt 桶。date 格式 YYYY-MM-DD，不传则用今天。"""
+    await decay_engine.ensure_started()
+
+    if not content or not content.strip():
+        return "内容为空，无法存储。"
+
+    import re
+    from datetime import datetime, timezone, timedelta
+
+    if date and re.match(r"\d{4}-\d{2}-\d{2}", date):
+        diary_date = date
+    else:
+        diary_date = datetime.now(timezone(timedelta(hours=8))).strftime("%Y-%m-%d")
+
+    parsed = datetime.strptime(diary_date, "%Y-%m-%d")
+    iso_year, iso_week, _ = parsed.isocalendar()
+    week_tag = f"diary:{iso_year}-W{iso_week:02d}"
+
+    diary_tags = ["diary", "日记", f"diary:{diary_date}", week_tag]
+
+    try:
+        analysis = await dehydrator.analyze(content)
+    except Exception as e:
+        logger.warning(f"write_diary auto-tagging failed: {e}")
+        analysis = {
+            "domain": ["日记"], "valence": 0.5, "arousal": 0.3,
+            "tags": [], "suggested_name": "",
+        }
+
+    domain = analysis.get("domain", ["日记"])
+    if "日记" not in domain:
+        domain.append("日记")
+
+    final_valence = valence if 0 <= valence <= 1 else analysis.get("valence", 0.5)
+    final_arousal = arousal if 0 <= arousal <= 1 else analysis.get("arousal", 0.3)
+    auto_tags = analysis.get("tags", [])
+    all_tags = list(dict.fromkeys(diary_tags + auto_tags))
+    suggested_name = analysis.get("suggested_name", f"{diary_date} 日记")
+
+    bucket_id = await bucket_mgr.create(
+        content=content,
+        tags=all_tags,
+        importance=7,
+        domain=domain,
+        valence=final_valence,
+        arousal=final_arousal,
+        name=suggested_name,
+    )
+    try:
+        await embedding_engine.generate_and_store(bucket_id, content)
+    except Exception:
+        pass
+
+    evt_tag = f"evt:{diary_date}"
+    resolved_count = 0
+    try:
+        all_buckets = await bucket_mgr.list_all(include_archive=False)
+        evt_buckets = [
+            b for b in all_buckets
+            if evt_tag in b["metadata"].get("tags", [])
+            and b["id"] != bucket_id
+            and not b["metadata"].get("resolved", False)
+        ]
+        for b in evt_buckets:
+            try:
+                await bucket_mgr.update(b["id"], resolved=True)
+                resolved_count += 1
+            except Exception:
+                pass
+    except Exception as e:
+        logger.warning(f"write_diary evt resolve failed: {e}")
+
+    return f"📓日记→{bucket_id} ({diary_date}) | resolved {resolved_count} evt桶 | {','.join(domain)}"
+
+
+# =============================================================
 # Tool 3: grow — Grow, fragments become memories
 # 工具 3：grow — 生长，一天的碎片长成记忆
 # =============================================================
