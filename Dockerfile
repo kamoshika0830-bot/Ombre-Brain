@@ -17,6 +17,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 # Copy project files / 复制项目文件
 COPY *.py .
+COPY tools/ ./tools/
 COPY dashboard.html .
 COPY diary.html .
 COPY config.example.yaml ./config.yaml

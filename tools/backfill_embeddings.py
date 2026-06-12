@@ -13,8 +13,9 @@ Free tier: 1500 requests/day, so ~75 batches of 20.
 import asyncio
 import argparse
 import sys
+from pathlib import Path
 
-sys.path.insert(0, ".")
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from utils import load_config
 from bucket_manager import BucketManager
 from embedding_engine import EmbeddingEngine
